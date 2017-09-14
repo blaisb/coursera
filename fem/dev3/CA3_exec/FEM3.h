@@ -112,9 +112,9 @@ template <int dim>
 double FEM<dim>::C(unsigned int i,unsigned int j,unsigned int k,unsigned int l){
 
   //Define the material parameters of Young's modulus and Poisson's ratio
-  double E= ,  //EDIT
-    nu= ; //EDIT
-  double lambda=(E*nu)/((1.+nu)*(1.-2.*nu)),
+    double E= 2.e11;  //EDIT
+    double nu= 0.3; //EDIT
+    double lambda=(E*nu)/((1.+nu)*(1.-2.*nu)),
     mu=E/(2.*(1.+nu));
 
   return lambda*(i==j)*(k==l) + mu*((i==k)*(j==l) + (i==l)*(j==k));
@@ -126,12 +126,12 @@ template <int dim>
 void FEM<dim>::generate_mesh(std::vector<unsigned int> numberOfElements){
 
   //Define the limits of your domain
-  double x_min = , //EDIT
-    x_max = , //EDIT
-    y_min = , //EDIT
-    y_max = , //EDIT
-    z_min = , //EDIT
-    z_max = ; //EDIT
+  double x_min = 0., //EDIT
+    x_max = 1., //EDIT
+    y_min = 0., //EDIT
+    y_max = 1., //EDIT
+    z_min = 0., //EDIT
+    z_max = 1.; //EDIT
 
   Point<dim,double> min(x_min,y_min,z_min),
     max(x_max,y_max,z_max);
@@ -168,6 +168,12 @@ void FEM<dim>::define_boundary_conds(){
     e.g. dofLocation[7][2] is the z-coordinate of global dof 7*/
 
   const unsigned int totalDOFs = dof_handler.n_dofs(); //Total number of degrees of freedom
+
+  // Set up the dirichlet BC using the X and Y position and for loops / if conditions
+  for (uint i = 0; i < totalNodes ; ++i)
+  {
+
+  }
 }
 
 //Setup data structures (sparse matrix, vectors)
@@ -317,8 +323,10 @@ void FEM<dim>::assemble_system(){
     //Assemble local K and F into global K and F
     for(unsigned int i=0; i<dofs_per_elem; i++){
       //EDIT - Assemble F from Flocal (you can look at HW2)
+        F[local_dof_indices[i]] += Flocal[i];
       for(unsigned int j=0; j<dofs_per_elem; j++){
 	//EDIT - Assemble K from Klocal (you can look at HW2)
+          K.add(local_dof_indices[i],local_dof_indices[j],Klocal[i][j]);
       }
     }
   }
