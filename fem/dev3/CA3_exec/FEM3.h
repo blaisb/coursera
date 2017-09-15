@@ -170,9 +170,13 @@ void FEM<dim>::define_boundary_conds(){
   const unsigned int totalDOFs = dof_handler.n_dofs(); //Total number of degrees of freedom
 
   // Set up the dirichlet BC using the X and Y position and for loops / if conditions
-  for (uint i = 0; i < totalNodes ; ++i)
+  for (uint i = 0; i < totalDOFs ; ++i)
   {
-
+     if (dofLocation[i][2]==0)
+     {
+         std::cout << " Z : "  << dofLocation[i][2] << std::endl;
+         boundary_values[i]=0.;
+     }
   }
 }
 
@@ -274,11 +278,15 @@ void FEM<dim>::assemble_system(){
 		for (unsigned int l = 0; l<dim; l++){
 		  /*//EDIT - You need to define Klocal here. Note that the indices of Klocal are the element dof numbers (0 through 23),
 		    which you can caluclate from the element node numbers (0 through 8) and the nodal dofs (0 through 2).
+
 		    You'll need the following information:
 		    basis gradient vector: fe_values.shape_grad(elementDOF,q), where elementDOF is dim*A+i or dim*B+k
 		    NOTE: this is the gradient with respect to the real domain (not the bi-unit domain)
 		    elasticity tensor: use the function C(i,j,k,l)
 		    det(J) times the total quadrature weight: fe_values.JxW(q)*/
+            int Ae=A*dim + i;
+            int Be=B*dim + k;
+            Klocal[Ae][Be]+=fe_values.shape_grad(Ae,q)[j] * C(i,j,k,l) * fe_values.shape_grad(Be,q)[l] * fe_values.JxW(q);
 		}
 	      }
 	    }
@@ -300,10 +308,15 @@ void FEM<dim>::assemble_system(){
       fe_face_values.reinit (elem, f);
       /*elem->face(f)->center() gives a position vector (in the real domain) of the center point on face f
 	of the current element. We can use it to see if we are at the Neumann boundary, x_3 = 1.*/
-      if(elem->face(f)->center()[2] == 1){
+      if(elem->face(f)->center()[2] == 1)
+      {
 	//To integrate over this face, loop over all face quadrature points with this single loop
 	for (unsigned int q=0; q<num_face_quad_pts; ++q){
 	  double x = fe_face_values.quadrature_point(q)[0]; //x-coordinate at the current surface quad. point
+      h[0]=0.;
+      h[1]=0.;
+      h[2]=1.0e9*x;
+      std::cout << " h " <<  h[2] << std::endl;
 	  //EDIT - define the value of the traction vector, h
 	  for (unsigned int A=0; A<nodes_per_elem; A++){ //loop over all element nodes
 	    for(unsigned int i=0; i<dim; i++){ //loop over nodal dofs
@@ -314,6 +327,8 @@ void FEM<dim>::assemble_system(){
 		the face quadrature points are only on the Neumann face, so we are indeed doing a surface integral.
 
 		For det(J) times the total quadrature weight: fe_face_values.JxW(q)*/
+            Flocal[dim*A+i] += fe_face_values.JxW(q) * h[i] * fe_face_values.shape_value(dim*A+i,q);
+            std::cout << " F local  : " << Flocal[dim*A+i] << " " << h[i]  << " " << fe_face_values.JxW(q) << " " << fe_face_values.shape_value(dim*A+i,q) << std::endl;
 	    }
 	  }
 	}
@@ -323,7 +338,9 @@ void FEM<dim>::assemble_system(){
     //Assemble local K and F into global K and F
     for(unsigned int i=0; i<dofs_per_elem; i++){
       //EDIT - Assemble F from Flocal (you can look at HW2)
-        F[local_dof_indices[i]] += Flocal[i];
+
+        F[local_dof_indices[i]]+=Flocal[i];
+        std::cout << " F value is : " << F[local_dof_indices[i]] << std::endl;
       for(unsigned int j=0; j<dofs_per_elem; j++){
 	//EDIT - Assemble K from Klocal (you can look at HW2)
           K.add(local_dof_indices[i],local_dof_indices[j],Klocal[i][j]);

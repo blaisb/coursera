@@ -8,6 +8,7 @@ SET(TARGET "main3")
 # Declare all source files the target consists of:
 SET(TARGET_SRC
   ${TARGET}.cc
+  FEM3.h
   # You can specify additional files here!
   )
 
